@@ -1,4 +1,3 @@
-import { error } from "console";
 import { NextFunction , Request, Response } from "express";
 import { z } from "zod";
 
@@ -16,10 +15,10 @@ export const validate = (schema: z.ZodType<any,any,any>)=>(
     if(!result.success){
         return res.status(400).json({
             error: "Validation failed",
-            details: error
+            details: result.error.issues
         });
     }
-    req.body = result.data.body;
+    req.body = result.data.body; // if valid - req.body me valid data daal do!
 
     next();
 }
