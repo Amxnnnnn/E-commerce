@@ -1,4 +1,3 @@
-import { extend } from "zod/mini";
 import { HttpException } from "./root";
 
 export class UnprocessableEntity extends HttpException{

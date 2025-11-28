@@ -2,6 +2,7 @@ import express,{ Express,Request,Response} from 'express';
 import {PORT} from './secrets'
 import rootRouter from './routes/index'
 import { PrismaClient } from '@prisma/client';
+import { errorMiddleware } from './middleware/error';
 
 const app:Express = express()
 
@@ -12,6 +13,8 @@ export const prismaClient = new PrismaClient({
 })
 
 app.use('/api',rootRouter)
+
+app.use(errorMiddleware)
 
 
 async function connectDatabase(){
@@ -32,11 +35,12 @@ async function connectDatabase(){
 async function startServer(){
     try{
         const isConnected = await connectDatabase();
-
+        
         if(!isConnected){
             console.error('Server initialization aborted due to database connection failure! ')
             process.exit(1)
         }
+
         app.listen(PORT,()=>{
             console.log("Express server is running on port : ",PORT);
             console.log(`Server URL: http://localhost:${PORT}`);

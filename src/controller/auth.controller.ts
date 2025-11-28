@@ -1,24 +1,25 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { prismaClient } from '..';
 import { hashSync, compareSync } from 'bcrypt';
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from '@/secrets';
 import { SignupInput , loginInput } from '../validator/auth.validator';
+import { ErrorCodes } from '../exceptions/root';
+import { BadRequestsException } from '../exceptions/bad_request';
 
 export const signup = async (
     req: Request<{},{},SignupInput>,
-    res: Response
+    res: Response,
+    next:NextFunction
 ) => {
     try {
         const { email, password, name } = req.body;
 
         let user = await prismaClient.user.findFirst({ where: { email } });
         if (user) {
-            return res.status(400).json({ 
-                error: 'User already exists!' 
-            });
+            throw new BadRequestsException('User already exists!', ErrorCodes.USER_ALREADY_EXIST)
         }
-
+        
         user = await prismaClient.user.create({
             data: {
                 name,
@@ -27,33 +28,27 @@ export const signup = async (
             }
         });
 
-        res.status(201).json(user);
-    } catch (error) {
-        console.error('Signup error:', error);
-        res.status(500).json({ 
-            error: 'An error occurred during signup' 
-        });
+        return res.status(201).json(user);
+    } catch (err: any) {
+        next(err);  // ← Pass to errorHandler middleware
     }
 };
 
 export const login = async (
     req: Request<{},{},loginInput>,
-    res: Response
+    res: Response,
+    next:NextFunction
 ) => {
     try {
         const { email, password } = req.body;
 
         let user = await prismaClient.user.findFirst({ where: { email } });
         if (!user) {
-            return res.status(404).json({ 
-                error: 'User does not exist!' 
-            });
+            throw new BadRequestsException('User not found', ErrorCodes.INCORRECT_PASSWORD)
         }
 
         if (!compareSync(password, user.password)) {
-            return res.status(401).json({ 
-                error: 'Incorrect password' 
-            });
+            throw new BadRequestsException('Incorrect password', ErrorCodes.INCORRECT_PASSWORD)
         }
 
         const token = jwt.sign(
@@ -61,11 +56,8 @@ export const login = async (
             JWT_SECRET
         );
 
-        res.json({ user, token });
+        return res.json({ user, token });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ 
-            error: 'An error occurred during login' 
-        });
+        next(error);  // ← Pass to errorHandler middleware
     }
 };
