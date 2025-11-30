@@ -1,8 +1,8 @@
 import express,{ Express,Request,Response} from 'express';
-import {PORT} from './secrets'
-import rootRouter from './routes/index'
+import {PORT} from './secret.validator'
+import rootRouter from './routes/index.route'
 import { PrismaClient } from '@prisma/client';
-import { errorMiddleware } from './middleware/error';
+import { errorMiddleware } from './middleware/error.mid';
 
 const app:Express = express()
 
@@ -16,6 +16,7 @@ app.use('/api',rootRouter)
 
 app.use(errorMiddleware)
 
+// Database connection check crowwww!
 
 async function connectDatabase(){
     try{
@@ -32,6 +33,7 @@ async function connectDatabase(){
     }
 }
 
+// After database connection verification (ki chalra hai ya nhi [considered as a good practice]) Now we can start the main app server!
 async function startServer(){
     try{
         const isConnected = await connectDatabase();
