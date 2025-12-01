@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import authRoutes from './auth'
-import productRoutes from './products';
+import authRoutes from './auth.route'
+import productRoutes from './products.route';
 
 const rootRouter:Router = Router()
 

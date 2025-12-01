@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./src/Types"],
 
     // Absolute imports (new 2025 way — no more deprecated baseUrl/paths warning)
     "baseUrl": ".",
