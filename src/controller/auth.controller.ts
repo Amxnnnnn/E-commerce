@@ -7,6 +7,7 @@ import { SignupInput , loginInput } from '../validator/auth.validator';
 import { ErrorCodes } from '../exceptions/root';
 import { BadRequestsException } from '../exceptions/bad_request';
 import { NotFoundException } from '@/exceptions/not_found';
+import { UnauthorizedException } from '@/exceptions/unauthorized.ex';
 
 export const signup = async (
     req: Request<{},{},SignupInput>,
@@ -56,9 +57,28 @@ export const login = async (
             { userId: user.id },
             JWT_SECRET
         );
-
+        
         return res.json({ user, token });
     } catch (error) {
         next(error);  
     }
 };
+
+export const me = async (
+    req: Request,
+    res: Response,
+    next:NextFunction
+) => {
+    try {
+        // ✅ Add null check
+        if (!req.user) {
+            throw new UnauthorizedException(
+                'Unauthorized',
+                ErrorCodes.UNAUTHORIZED_EXCEPTION
+            );
+        }
+        res.json(req.user);
+    } catch (error) {
+        next(error);
+    }
+}

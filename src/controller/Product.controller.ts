@@ -1,13 +1,31 @@
-import { Request , Response} from "express"
-import { prismaClient } from "../index.validator"
+import { Request , Response, NextFunction} from "express"
+import { prismaClient } from "../prisma_connection"
 
-export const creatProduct = async(req:Request,res:Response) =>{
-    const product = await prismaClient.products.create({
-        data:{
-            ...req.body,
-            tags: req.body.tags.join(',')
+export const createProduct = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const { name , description, price, tags} = req.body;
+
+        if (!name || !description || !price || !Array.isArray(tags)){
+            return res.status(400).json({
+                error: "Invalid input. Required: name, description, price, tags (array)"
+            })
         }
-    })
+        const product = await prismaClient.product.create({
+            data: {
+               name,
+               description,
+               price,
+               tags:tags.join(',')
+            }
+        });
 
-    res.json(product)
+        res.status(201).json(product);
+    } catch (error) {
+        next(error);
+    }
 }
