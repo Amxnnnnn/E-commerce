@@ -9,6 +9,6 @@ const authRoutes:Router = Router()
 
 authRoutes.post('/signup',validate(signupSchema),errorHandler(signup))// zod validator
 authRoutes.post('/login',validate(loginSchema),errorHandler(login))
-authRoutes.get('/me', authMiddleware,errorHandler(me))
+authRoutes.get('/me',authMiddleware,errorHandler(me))
 
 export default authRoutes

@@ -10,24 +10,23 @@ export const validate = (schema: ZodSchema) => {
                 body: req.body,
                 query: req.query,
                 params: req.params,
-            }) as any;
+            }) as any ; // frustated to use this 
 
-            req.body = validated.body;
-            req.query = validated.query;
-            req.params = validated.params;
+           req.body = validated.body || req.body
 
             next();
         } catch (error) {
-            if (error instanceof ZodError) {
-                return next(
-                    new UnprocessableEntity(
-                        error.issues,
-                        'Validation failed',
-                        ErrorCodes.UNPROCESSABLE_ENTITY
-                    )
+            console.log("Validation Error : ", error)
+            
+            if(error instanceof ZodError){
+                const validationError = new UnprocessableEntity(
+                    error.issues,
+                    'Validation failed',
+                    ErrorCodes.UNPROCESSABLE_ENTITY
                 );
+                return next(validationError)
             }
             next(error);
         }
     };
-};
+    };

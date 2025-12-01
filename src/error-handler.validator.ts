@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express"
 import { HttpException } from "./exceptions/root"
 import { InternalException } from "./exceptions/internal-exception"
 import { ErrorCodes } from "./exceptions/root"
+import { STATUS_CODES } from "http"
 
 export const errorHandler = (method: Function)=>{
     return (req:Request, res:Response, next:NextFunction) =>{
@@ -11,8 +12,17 @@ export const errorHandler = (method: Function)=>{
                 if(error instanceof HttpException){
                     exception = error;
                 } else {
-                    exception = new InternalException('Something went wrong!', error, ErrorCodes.INTERNAL_EXCEPTION)
-                }
+                    exception = new InternalException(
+                        'Something went wrong!',
+                         error,
+                        ErrorCodes.INTERNAL_EXCEPTION
+                    )
+                };
+                console.log("Passing exception to middleware:",{
+                    message: exception.message,
+                    statusCode:exception.statusCode,
+                    errorCode: exception.errorCode
+                });
                 next(exception)
             })
     }
