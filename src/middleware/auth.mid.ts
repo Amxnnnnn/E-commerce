@@ -6,20 +6,51 @@ import jwt from "jsonwebtoken";
 import { prismaClient } from "../prisma_connection";
 
 
-export const authMiddleware = async(req: Request,res:Response,next:NextFunction) =>{
+export const authMiddleware = async(
+    req: Request,
+    res:Response,
+    next:NextFunction
+) =>{
+    try{
+        console.log("Auth middleware started");
+        console.log("Authorization header : ", req.headers.authorization)
 
-    let token = req.headers.authorization?.split(' ')[1]
+        const authHeader = req.headers.authorization
+
+        if(!authHeader){
+            console.log("No authorization header");
+            return next(
+                new UnauthorizedException(
+                    "Unauthoried - No Token provided",
+                    ErrorCodes.UNAUTHORIZED_EXCEPTION
+                )
+            );
+        }
+
+    const token = authHeader.startsWith('Bearer ')
+    ?authHeader.slice(7)
+    : authHeader;
+
+    console.log("Token extracted :", token.substring(0,20)+ "..." )
 
       if (!token) {
-    return next(new UnauthorizedException("Unauthorized", ErrorCodes.UNAUTHORIZED_EXCEPTION));
+    return next(
+        new UnauthorizedException(
+            "Unauthorized",
+             ErrorCodes.UNAUTHORIZED_EXCEPTION
+            )
+        );
 }
-
-try{
+    console.log("Token verifying...")
     const payload = jwt.verify(token,JWT_SECRET) as {userId:number}
+    console.log("Token verified , userId:", payload.userId);
 
+
+    console.log("looking for user with id:",payload.userId)
     const user = await prismaClient.user.findFirst({
         where:{id:payload.userId}
     })
+
     
     if(!user){
             return next(
@@ -29,10 +60,14 @@ try{
                 )
             );
         }
-    req.user = user
+        console.log("User found:",user.email);
+        req.user = user;
+       console.log("User attached to request");
+
     next()
 
-    }catch(error){
+    }catch(error: any){
+        console.log("Auth middleware error:", error.message);
           next(
             new UnauthorizedException(
                 'Un-auhtorized!',

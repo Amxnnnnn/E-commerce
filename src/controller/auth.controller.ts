@@ -2,12 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import { prismaClient } from '../index.validator';
 import { hashSync, compareSync } from 'bcrypt';
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from '@/secret.validator';
+import { JWT_SECRET } from '../secret.validator';
 import { SignupInput , loginInput } from '../validator/auth.validator';
 import { ErrorCodes } from '../exceptions/root';
 import { BadRequestsException } from '../exceptions/bad_request';
-import { NotFoundException } from '@/exceptions/not_found';
-import { UnauthorizedException } from '@/exceptions/unauthorized.ex';
+import { NotFoundException } from '../exceptions/not_found';
+import { UnauthorizedException } from '../exceptions/unauthorized.ex';
 
 export const signup = async (
     req: Request<{},{},SignupInput>,
@@ -54,7 +54,9 @@ export const login = async (
         }
 
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.id ,
+               role:user.role 
+            },
             JWT_SECRET
         );
         
@@ -69,16 +71,24 @@ export const me = async (
     res: Response,
     next:NextFunction
 ) => {
-    try {
-        // ✅ Add null check
-        if (!req.user) {
-            throw new UnauthorizedException(
-                'Unauthorized',
-                ErrorCodes.UNAUTHORIZED_EXCEPTION
-            );
-        }
-        res.json(req.user);
-    } catch (error) {
+    try{
+     console.log(" Me endpoint called...");
+     console.log("req.user : ",req.user);
+
+     if(!req.user){
+        console.log("No user found in request");
+        throw new UnauthorizedException(
+            'Unauthorized - Nouser found',
+            ErrorCodes.UNAUTHORIZED_EXCEPTION
+        );
+     }
+    return res.status(200).json({
+        success: true,
+        user: req.user
+    });
+
+    } catch(error){
+        console.log("Error in me endpoint : ",error);
         next(error);
     }
-}
+} 

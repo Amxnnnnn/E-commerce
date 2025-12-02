@@ -32,7 +32,7 @@ model user {
 model Product {
   id Int @id @default(autoincrement())
   name String
-  description String
+  description String 
   price Decimal
   tags String
   createdAt DateTime @default(now())
