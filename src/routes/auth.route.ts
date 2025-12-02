@@ -4,6 +4,7 @@ import { validate } from "../middleware/validate.mid";
 import { signupSchema, loginSchema } from '../validator/auth.validator';
 import { errorHandler } from '../error-handler.validator';
 import { authMiddleware } from '@/middleware/auth.mid';
+import adminMiddleware from '@/middleware/admin.mid';
 
 const authRoutes:Router = Router()
 
