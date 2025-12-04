@@ -20,9 +20,9 @@ export const validate = (schema: ZodSchema) => {
             
             if(error instanceof ZodError){
                 const validationError = new UnprocessableEntity(
-                    error.issues,
                     'Validation failed',
                     ErrorCodes.UNPROCESSABLE_ENTITY
+                    ,error.issues
                 );
                 return next(validationError)
             }
