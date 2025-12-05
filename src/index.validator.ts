@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { errorMiddleware } from './middleware/error.mid';
 import { connectDatabase, prismaClient } from './prisma_connection';
 import userRoutes from './routes/Address.route';
+import swaggerUi from "swagger-ui-express"
 
 const app:Express = express()
 
