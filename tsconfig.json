@@ -11,16 +11,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./src/Types"],
+    "types": ["node"],
 
-    // Absolute imports (new 2025 way — no more deprecated baseUrl/paths warning)
+    // Absolute imports
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
-
-    // Silence the deprecation warning until TS 7.0 is stable (safe & recommended)
-    "ignoreDeprecations": "6.0",
 
     // This kills the verbatimModuleSyntax error
     "verbatimModuleSyntax": false

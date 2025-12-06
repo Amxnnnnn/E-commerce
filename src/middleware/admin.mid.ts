@@ -7,6 +7,7 @@ import { prismaClient } from "../prisma_connection";
 
 
 export const adminMiddleware = async(
+    
     req: Request,
     res:Response,
     next:NextFunction
