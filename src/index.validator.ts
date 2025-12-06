@@ -1,19 +1,20 @@
-import express,{ Express,Request,Response} from 'express';
-import {PORT} from './secret.validator'
+import express, { Express } from 'express';
+import { PORT } from './secret.validator'
 import rootRouter from './routes/index.route'
-import { PrismaClient } from '@prisma/client';
 import { errorMiddleware } from './middleware/error.mid';
 import { connectDatabase, prismaClient } from './prisma_connection';
-import userRoutes from './routes/Address.route';
+import { setupSwagger } from './swagger';
 
-const app:Express = express()
+const app: Express = express()
 
 app.use(express.json())
 
 export { prismaClient }
 
-app.use('/api',rootRouter)
-// app.use('/api/users',userRoutes)
+// Setup Swagger API Documentation
+setupSwagger(app);
+
+app.use('/api', rootRouter)
 
 app.use(errorMiddleware)
 

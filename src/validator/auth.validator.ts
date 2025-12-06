@@ -34,7 +34,15 @@ export const updateUserSchema = z.object({
     })
 })
 
+export const CreateCartSchema = z.object({
+    productId: z.number(),
+    quantity:z.number()
+})
+
+
+
 export type SignupInput = z.infer<typeof signupSchema>["body"];
 export type loginInput = z.infer<typeof loginSchema>["body"];
 export type AddressInput = z.infer<typeof AddressSchema>["body"];
 export type updateUserInput = z.infer<typeof updateUserSchema>["body"];
+export type CreateCartSchema = z.infer<typeof CreateCartSchema>;
