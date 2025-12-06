@@ -1,8 +1,10 @@
-import swaggerJsdoc from 'swagger-jsdoc';
+import * as swaggerJsdocModule from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { Express } from 'express';
 
-const options: swaggerJsdoc.Options = {
+const swaggerJsdoc = (swaggerJsdocModule as any).default || swaggerJsdocModule;
+
+const options: any = {
     definition: {
         openapi: '3.0.0',
         info: {
@@ -77,6 +79,60 @@ const options: swaggerJsdoc.Options = {
                         updatedAt: { type: 'string', format: 'date-time' }
                     }
                 },
+                // CartItem Schema
+                CartItem: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        userId: { type: 'integer', example: 1 },
+                        productId: { type: 'integer', example: 1 },
+                        quantity: { type: 'integer', example: 2 },
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' },
+                        product: { $ref: '#/components/schemas/Product' }
+                    }
+                },
+                // Order Schema
+                Order: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        userId: { type: 'integer', example: 1 },
+                        netAmount: { type: 'string', example: '1999.98' },
+                        address: { type: 'string', example: '123 Main St, Apt 4B, New York, USA - 100001' },
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' },
+                        products: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'integer', example: 1 },
+                                    orderId: { type: 'integer', example: 1 },
+                                    productId: { type: 'integer', example: 1 },
+                                    quantity: { type: 'integer', example: 2 },
+                                    product: { $ref: '#/components/schemas/Product' }
+                                }
+                            }
+                        },
+                        event: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'integer', example: 1 },
+                                    orderId: { type: 'integer', example: 1 },
+                                    status: {
+                                        type: 'string',
+                                        enum: ['PENDING', 'ACCEPTED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELED'],
+                                        example: 'PENDING'
+                                    },
+                                    createdAt: { type: 'string', format: 'date-time' }
+                                }
+                            }
+                        }
+                    }
+                },
                 // Error Schema
                 Error: {
                     type: 'object',
@@ -104,6 +160,14 @@ const options: swaggerJsdoc.Options = {
             {
                 name: 'Addresses',
                 description: 'Address management for users'
+            },
+            {
+                name: 'Cart',
+                description: 'Shopping cart management endpoints'
+            },
+            {
+                name: 'Orders',
+                description: 'Order management endpoints'
             }
         ]
     },
