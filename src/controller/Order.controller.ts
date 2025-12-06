@@ -3,7 +3,6 @@ import { Request, Response, NextFunction } from 'express'
 import { NotFoundException } from '@/exceptions/not_found'
 import { BadRequestsException } from '@/exceptions/bad_request'
 import { ErrorCodes } from '@/exceptions/root'
-import { Prisma } from '@prisma/client'
 
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -11,74 +10,75 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
             throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
         }
 
-        const order = await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
-            const cartItems = await tx.cartItem.findMany({
-                where: {
-                    userId: req.user!.id
-                },
-                include: {
-                    product: true
-                }
-            })
-
-            if (cartItems.length === 0) {
-                throw new BadRequestsException('Cart is empty', ErrorCodes.INTERNAL_EXCEPTION)
+        // Use the prismaClient directly without transaction for now
+        const cartItems = await prismaClient.cartItem.findMany({
+            where: {
+                userId: req.user.id
+            },
+            include: {
+                product: true
             }
+        })
 
-            const price = cartItems.reduce((prev: number, current: typeof cartItems[0]) => {
-                return prev + (current.quantity * Number(current.product.price))
-            }, 0)
+        if (cartItems.length === 0) {
+            throw new BadRequestsException('Cart is empty', ErrorCodes.INTERNAL_EXCEPTION)
+        }
 
-            const address = await tx.address.findFirst({
-                where: {
-                    id: req.user!.defaultShippingAddress!
-                }
-            })
+        const price = cartItems.reduce((prev: number, current) => {
+            return prev + (current.quantity * Number(current.product.price))
+        }, 0)
 
-            if (!address) {
-                throw new NotFoundException('Shipping address not found', ErrorCodes.ADDRESS_NOT_FOUND)
+        const address = await prismaClient.address.findFirst({
+            where: {
+                id: req.user.defaultShippingAddress!
             }
+        })
 
-            // Format address string
-            const formattedAddress = `${address.lineOne}${address.lineTwo ? ', ' + address.lineTwo : ''}, ${address.city}, ${address.country} - ${address.pincode}`
+        if (!address) {
+            throw new NotFoundException('Shipping address not found', ErrorCodes.ADDRESS_NOT_FOUND)
+        }
 
-            const order = await tx.order.create({
-                data: {
-                    userId: req.user!.id,
-                    netAmount: price,
-                    address: formattedAddress,
-                    products: {
-                        create: cartItems.map((cart: typeof cartItems[0]) => {
-                            return {
-                                productId: cart.productId,
-                                quantity: cart.quantity
-                            }
-                        })
+        // Format address string
+        const formattedAddress = `${address.lineOne}${address.lineTwo ? ', ' + address.lineTwo : ''}, ${address.city}, ${address.country} - ${address.pincode}`
+
+        // Create order with products in a single transaction
+        const order = await prismaClient.order.create({
+            data: {
+                userId: req.user.id,
+                netAmount: price,
+                address: formattedAddress,
+                products: {
+                    create: cartItems.map((cart) => {
+                        return {
+                            productId: cart.productId,
+                            quantity: cart.quantity
+                        }
+                    })
+                }
+            },
+            include: {
+                products: {
+                    include: {
+                        product: true
                     }
                 },
-                include: {
-                    products: {
-                        include: {
-                            product: true
-                        }
-                    },
-                    event: true
-                }
-            })
+                event: true
+            }
+        })
 
-            await tx.orderEvent.create({
-                data: {
-                    orderId: order.id
-                }
-            })
+        // Create initial order event
+        await prismaClient.orderEvent.create({
+            data: {
+                orderId: order.id,
+                status: 'PENDING'
+            }
+        })
 
-            await tx.cartItem.deleteMany({
-                where: {
-                    userId: req.user!.id
-                }
-            })
-
-            return order
+        // Clear cart items
+        await prismaClient.cartItem.deleteMany({
+            where: {
+                userId: req.user.id
+            }
         })
 
         res.status(201).json({
@@ -221,6 +221,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
         next(error)
     }
 }
+
 export const listAllOrders = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.user) {
