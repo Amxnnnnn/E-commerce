@@ -39,6 +39,10 @@ export const CreateCartSchema = z.object({
     quantity:z.number()
 })
 
+export const ChangeQuantitySchema = z.object({
+    quantity: z.number()
+})
+
 
 
 export type SignupInput = z.infer<typeof signupSchema>["body"];
@@ -46,3 +50,4 @@ export type loginInput = z.infer<typeof loginSchema>["body"];
 export type AddressInput = z.infer<typeof AddressSchema>["body"];
 export type updateUserInput = z.infer<typeof updateUserSchema>["body"];
 export type CreateCartSchema = z.infer<typeof CreateCartSchema>;
+export type ChangeQuantitySchema = z.infer<typeof ChangeQuantitySchema>;
