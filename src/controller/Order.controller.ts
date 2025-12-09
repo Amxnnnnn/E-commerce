@@ -10,7 +10,14 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
             throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
         }
 
-        // Use the prismaClient directly without transaction for now
+        // Check if user has set a default shipping address
+        if (!req.user.defaultShippingAddress) {
+            throw new BadRequestsException(
+                'Please set a default shipping address before creating an order',
+                ErrorCodes.ADDRESS_NOT_FOUND
+            )
+        }
+
         const cartItems = await prismaClient.cartItem.findMany({
             where: {
                 userId: req.user.id
@@ -28,9 +35,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
             return prev + (current.quantity * Number(current.product.price))
         }, 0)
 
+        // Find the address - now we know defaultShippingAddress is not null
         const address = await prismaClient.address.findFirst({
             where: {
-                id: req.user.defaultShippingAddress!
+                id: req.user.defaultShippingAddress
             }
         })
 
@@ -41,7 +49,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         // Format address string
         const formattedAddress = `${address.lineOne}${address.lineTwo ? ', ' + address.lineTwo : ''}, ${address.city}, ${address.country} - ${address.pincode}`
 
-        // Create order with products in a single transaction
+        // Create order with products
         const order = await prismaClient.order.create({
             data: {
                 userId: req.user.id,
