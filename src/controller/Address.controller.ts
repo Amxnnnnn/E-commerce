@@ -11,7 +11,6 @@ export const addAddress = async (
     next: NextFunction
 ) => {
     try {
-        // User is already authenticated via authMiddleware
         if (!req.user) {
             throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
         }
@@ -20,7 +19,7 @@ export const addAddress = async (
 
         console.log('📍 Creating address with data:', { lineOne, lineTwo, city, country, pincode, userId: req.user.id })
 
-        // Create address for the authenticated user
+        // Create the address
         const address = await prismaClient.address.create({
             data: {
                 lineOne,
@@ -34,6 +33,26 @@ export const addAddress = async (
 
         console.log('✅ Address created successfully:', address)
 
+        // Fetch user to check if default addresses are set
+        const user = await prismaClient.user.findUnique({ where: { id: req.user.id } });
+
+        if (user) {
+            const updateData: any = {}
+            // If defaultShippingAddress is not set, set it to this new address
+            if (!user.defaultShippingAddress) updateData.defaultShippingAddress = address.id
+            // If defaultBillingAddress is not set, set it to this new address
+            if (!user.defaultBillingAddress) updateData.defaultBillingAddress = address.id
+
+            // Update user defaults if needed
+            if (Object.keys(updateData).length > 0) {
+                await prismaClient.user.update({
+                    where: { id: req.user.id },
+                    data: updateData
+                })
+                console.log('✅ User default addresses updated automatically')
+            }
+        }
+
         res.status(201).json({
             success: true,
             address: formatAddressWithComputedField(address)
@@ -43,6 +62,7 @@ export const addAddress = async (
         next(error)
     }
 }
+
 
 export const deleteAddress = async (
     req: Request,
@@ -140,73 +160,46 @@ export const updateUser = async (
 
         // Validate shipping address if provided
         if (defaultShippingAddress) {
-            try {
-                const shippingAddress = await prismaClient.address.findFirstOrThrow({
-                    where: {
-                        id: defaultShippingAddress
-                    }
-                })
-
-                if (shippingAddress.userId !== req.user.id) {
-                    throw new BadRequestsException(
-                        "Shipping address does not belong to user",
-                        ErrorCodes.ADDRESS_DOES_NOT_BELONG
-                    )
-                }
-            } catch (error) {
-                if (error instanceof BadRequestsException) {
-                    throw error;
-                }
-                throw new NotFoundException('Shipping address not found', ErrorCodes.ADDRESS_NOT_FOUND)
+            const shippingAddress = await prismaClient.address.findFirst({
+                where: { id: defaultShippingAddress, userId: req.user.id }
+            })
+            if (!shippingAddress) {
+                throw new BadRequestsException(
+                    "Shipping address does not exist or does not belong to user",
+                    ErrorCodes.ADDRESS_DOES_NOT_BELONG
+                )
             }
         }
 
         // Validate billing address if provided
         if (defaultBillingAddress) {
-            try {
-                const billingAddress = await prismaClient.address.findFirstOrThrow({
-                    where: {
-                        id: defaultBillingAddress
-                    }
-                })
-
-                if (billingAddress.userId !== req.user.id) {
-                    throw new BadRequestsException(
-                        "Billing address does not belong to user",
-                        ErrorCodes.ADDRESS_DOES_NOT_BELONG
-                    )
-                }
-            } catch (error) {
-                if (error instanceof BadRequestsException) {
-                    throw error;
-                }
-                throw new NotFoundException('Billing address not found', ErrorCodes.ADDRESS_NOT_FOUND)
+            const billingAddress = await prismaClient.address.findFirst({
+                where: { id: defaultBillingAddress, userId: req.user.id }
+            })
+            if (!billingAddress) {
+                throw new BadRequestsException(
+                    "Billing address does not exist or does not belong to user",
+                    ErrorCodes.ADDRESS_DOES_NOT_BELONG
+                )
             }
         }
 
-        // Build update data object with only provided fields
-        const updateData: any = {};
-        if (name !== undefined) updateData.name = name;
-        if (defaultShippingAddress !== undefined) updateData.defaultShippingAddress = defaultShippingAddress;
-        if (defaultBillingAddress !== undefined) updateData.defaultBillingAddress = defaultBillingAddress;
+        // Build update object
+        const updateData: any = {}
+        if (name !== undefined) updateData.name = name
+        if (defaultShippingAddress !== undefined) updateData.defaultShippingAddress = defaultShippingAddress
+        if (defaultBillingAddress !== undefined) updateData.defaultBillingAddress = defaultBillingAddress
 
         // Update user
         const updatedUser = await prismaClient.user.update({
-            where: {
-                id: req.user.id
-            },
+            where: { id: req.user.id },
             data: updateData
         })
 
         console.log('✅ User updated successfully:', updatedUser.id)
 
-        // Remove password from response
-        const { password, ...userWithoutPassword } = updatedUser;
-
-        res.json({
-            success: true,
-            user: userWithoutPassword
-        })
+        const { password, ...userWithoutPassword } = updatedUser
+        res.json({ success: true, user: userWithoutPassword })
     } catch (error) {
         console.error('❌ Error updating user:', error)
         next(error)
