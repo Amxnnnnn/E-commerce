@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { errorHandler } from '@/error-handler.validator'
 import { authMiddleware } from '@/middleware/auth.mid'
 import adminMiddleware from '@/middleware/admin.mid'
-import { createOrder, listOrder, cancelOrder, getOrderById, listAllOrders, changeOrderStatus } from '@/controller/Order.controller'
+import { createOrder, listOrder, cancelOrder, getOrderById, listAllOrders, changeOrderStatus, listUserOrders } from '@/controller/Order.controller'
 
 const orderRoutes: Router = Router()
 
@@ -27,23 +27,6 @@ const orderRoutes: Router = Router()
  *                   example: true
  *                 order:
  *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     userId:
- *                       type: integer
- *                     netAmount:
- *                       type: string
- *                     address:
- *                       type: string
- *                     products:
- *                       type: array
- *                       items:
- *                         type: object
- *                     event:
- *                       type: array
- *                       items:
- *                         type: object
  *       400:
  *         description: Cart is empty or shipping address not set
  *       404:
@@ -86,44 +69,6 @@ orderRoutes.get('/', [authMiddleware], errorHandler(listOrder))
 
 /**
  * @swagger
- * /api/orders/{id}/cancel:
- *   put:
- *     summary: Cancel an order
- *     tags: [Orders]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Order ID
- *     responses:
- *       200:
- *         description: Order cancelled successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Order cancelled successfully
- *       400:
- *         description: Order cannot be cancelled (already delivered or cancelled)
- *       404:
- *         description: Order not found
- *       401:
- *         description: Unauthorized
- */
-orderRoutes.put('/:id/cancel', [authMiddleware], errorHandler(cancelOrder))
-
-/**
- * @swagger
  * /api/orders/{id}:
  *   get:
  *     summary: Get order details by ID
@@ -159,6 +104,44 @@ orderRoutes.get('/:id', [authMiddleware], errorHandler(getOrderById))
 
 /**
  * @swagger
+ * /api/orders/{id}/cancel:
+ *   put:
+ *     summary: Cancel an order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Order ID
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Order cancelled successfully
+ *       400:
+ *         description: Order cannot be cancelled
+ *       404:
+ *         description: Order not found
+ *       401:
+ *         description: Unauthorized
+ */
+orderRoutes.put('/:id/cancel', [authMiddleware], errorHandler(cancelOrder))
+
+/**
+ * @swagger
  * /api/orders/admin/all:
  *   get:
  *     summary: List all orders (Admin only)
@@ -177,31 +160,10 @@ orderRoutes.get('/:id', [authMiddleware], errorHandler(getOrderById))
  *         schema:
  *           type: integer
  *           default: 0
- *         description: Number of records to skip for pagination
+ *         description: Number of records to skip
  *     responses:
  *       200:
  *         description: Orders retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 count:
- *                   type: integer
- *                   example: 10
- *                 totalCount:
- *                   type: integer
- *                   example: 50
- *                 skip:
- *                   type: integer
- *                   example: 0
- *                 orders:
- *                   type: array
- *                   items:
- *                     type: object
  *       401:
  *         description: Unauthorized - Admin access required
  */
@@ -238,16 +200,6 @@ orderRoutes.get('/admin/all', [authMiddleware, adminMiddleware], errorHandler(li
  *     responses:
  *       200:
  *         description: Order status updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 order:
- *                   type: object
  *       400:
  *         description: Invalid status
  *       404:
@@ -256,5 +208,33 @@ orderRoutes.get('/admin/all', [authMiddleware, adminMiddleware], errorHandler(li
  *         description: Unauthorized - Admin access required
  */
 orderRoutes.put('/:id/status', [authMiddleware, adminMiddleware], errorHandler(changeOrderStatus))
+
+/**
+ * @swagger
+ * /api/orders/user/{id}:
+ *   get:
+ *     summary: List orders for specific user (Admin only)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *     responses:
+ *       200:
+ *         description: User orders retrieved successfully
+ *       401:
+ *         description: Unauthorized - Admin access required
+ */
+orderRoutes.get('/user/:id', [authMiddleware, adminMiddleware], errorHandler(listUserOrders))
 
 export default orderRoutes

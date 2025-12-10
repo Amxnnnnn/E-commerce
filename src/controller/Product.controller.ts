@@ -3,6 +3,7 @@ import { prismaClient } from "../prisma_connection"
 import { NotFoundException } from "@/exceptions/not_found";
 import { ErrorCodes } from "@/exceptions/root";
 import { error } from "console";
+import { BadRequestsException } from "@/exceptions/bad_request";
 
 export const createProduct = async (
     req: Request,
@@ -67,7 +68,7 @@ export const deleteProduct = async(req:Request,res:Response) =>{
         }
     }
     
-    export const listProduct = async(req:Request,res:Response) =>{
+export const listProduct = async(req:Request,res:Response) =>{
         const count = await prismaClient.product.count()
         const products = await prismaClient.product.findMany({
             skip: Number(req.query.skip) || 0,
@@ -77,7 +78,7 @@ export const deleteProduct = async(req:Request,res:Response) =>{
             count,data:products
         })
     }
-    export const getProductById = async(req:Request,res:Response) =>{
+export const getProductById = async(req:Request,res:Response) =>{
         
         try{
             const product = await prismaClient.product.findFirstOrThrow({
@@ -90,5 +91,95 @@ export const deleteProduct = async(req:Request,res:Response) =>{
             console.log(error)
             throw new NotFoundException('Product not found - for getProductById',ErrorCodes.PRODUCT_NOT_FOUND)
             
+    }
+}
+
+export const searchProduct = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // Get search query from query parameter
+        const searchQuery = req.query.q as string
+
+        // Validate search query
+        if (!searchQuery || searchQuery.trim().length === 0) {
+            throw new BadRequestsException(
+                'Search query is required. Use ?q=yourSearchTerm',
+                ErrorCodes.INTERNAL_EXCEPTION
+            )
+        }
+
+        const query = searchQuery.toLowerCase().trim()
+
+        // Get pagination parameters
+        const skip = parseInt(req.query.skip as string) || 0
+        const take = parseInt(req.query.take as string) || 10
+
+        // Search products by name, description, or tags
+        const products = await prismaClient.product.findMany({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            contains: query,
+                            mode: 'insensitive' // Case-insensitive search
+                        }
+                    },
+                    {
+                        description: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        tags: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
+            },
+            skip,
+            take,
+            orderBy: {
+                name: 'asc' // Sort by name alphabetically
+            }
+        })
+
+        // Get total count of matching products
+        const totalCount = await prismaClient.product.count({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        description: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        tags: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
+            }
+        })
+
+        res.json({
+            success: true,
+            searchQuery: query,
+            count: products.length,
+            totalCount,
+            skip,
+            take,
+            data: products
+        })
+    } catch (error) {
+        next(error)
     }
 }

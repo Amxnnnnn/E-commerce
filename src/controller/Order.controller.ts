@@ -136,6 +136,46 @@ export const listOrder = async (req: Request, res: Response, next: NextFunction)
     }
 }
 
+export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user) {
+            throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
+        }
+
+        const orderId = +req.params.id
+
+        const order = await prismaClient.order.findFirst({
+            where: {
+                id: orderId,
+                userId: req.user.id
+            },
+            include: {
+                products: {
+                    include: {
+                        product: true
+                    }
+                },
+                event: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
+                }
+            }
+        })
+
+        if (!order) {
+            throw new NotFoundException('Order not found', ErrorCodes.PRODUCT_NOT_FOUND)
+        }
+
+        res.json({
+            success: true,
+            order
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.user) {
@@ -184,46 +224,6 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
         res.json({
             success: true,
             message: 'Order cancelled successfully'
-        })
-    } catch (error) {
-        next(error)
-    }
-}
-
-export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        if (!req.user) {
-            throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
-        }
-
-        const orderId = +req.params.id
-
-        const order = await prismaClient.order.findFirst({
-            where: {
-                id: orderId,
-                userId: req.user.id
-            },
-            include: {
-                products: {
-                    include: {
-                        product: true
-                    }
-                },
-                event: {
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
-                }
-            }
-        })
-
-        if (!order) {
-            throw new NotFoundException('Order not found', ErrorCodes.PRODUCT_NOT_FOUND)
-        }
-
-        res.json({
-            success: true,
-            order
         })
     } catch (error) {
         next(error)
@@ -347,6 +347,50 @@ export const changeOrderStatus = async (req: Request, res: Response, next: NextF
         res.json({
             success: true,
             order: updatedOrder
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const listUserOrders = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.user) {
+            throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
+        }
+
+        const userId = +req.params.id
+        const skip = parseInt(req.query.skip as string) || 0
+        const take = 5
+
+        const orders = await prismaClient.order.findMany({
+            where: {
+                userId: userId
+            },
+            include: {
+                products: {
+                    include: {
+                        product: true
+                    }
+                },
+                event: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    },
+                    take: 1
+                }
+            },
+            skip,
+            take,
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+
+        res.json({
+            success: true,
+            count: orders.length,
+            orders
         })
     } catch (error) {
         next(error)

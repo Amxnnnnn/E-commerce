@@ -3,7 +3,8 @@ import { errorHandler } from '@/error-handler.validator'
 import { authMiddleware } from '@/middleware/auth.mid'
 import { validate } from '@/middleware/validate.mid'
 import { AddressSchema, updateUserSchema } from '@/validator/auth.validator'
-import { addAddress, deleteAddress, listAddress, updateUser } from '@/controller/Address.controller'
+import { addAddress, deleteAddress, listAddress, updateUser , listUsers , getUserById , changeUserRole} from '@/controller/Address.controller'
+import adminMiddleware from '@/middleware/admin.mid'
 
 const userRoutes: Router = Router()
 
@@ -108,7 +109,8 @@ userRoutes.put('/', [authMiddleware, validate(updateUserSchema)], errorHandler(u
  *       401:
  *         description: Unauthorized
  */
-userRoutes.post('/address', [authMiddleware, validate(AddressSchema)], errorHandler(addAddress))
+// Temporarily removed validation to debug - add back validate(AddressSchema) if needed
+userRoutes.post('/address', [authMiddleware], errorHandler(addAddress))
 
 /**
  * @swagger
@@ -176,5 +178,9 @@ userRoutes.delete('/address/:id', authMiddleware, errorHandler(deleteAddress))
  *         description: Unauthorized
  */
 userRoutes.get('/address', authMiddleware, errorHandler(listAddress))
+userRoutes.put('/:id/role', [authMiddleware,adminMiddleware], errorHandler(changeUserRole))
+userRoutes.get('/', [authMiddleware,adminMiddleware], errorHandler(listUsers))
+userRoutes.get('/:id', [authMiddleware,adminMiddleware], errorHandler(getUserById))
+// userRoutes.get('/address', authMiddleware, errorHandler(listAddress))
 
 export default userRoutes

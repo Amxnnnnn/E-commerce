@@ -1,10 +1,74 @@
-import { createProduct, deleteProduct, getProductById, listProduct, updateProduct } from '@/controller/Product.controller'
+import { createProduct, deleteProduct, getProductById, listProduct, updateProduct, searchProduct } from '@/controller/Product.controller'
 import { errorHandler } from '@/error-handler.validator'
 import adminMiddleware from '@/middleware/admin.mid'
 import { authMiddleware } from '@/middleware/auth.mid'
-import {Router} from 'express'
+import { Router } from 'express'
 
-const productRoutes:Router = Router()
+const productRoutes: Router = Router()
+
+/**
+ * @swagger
+ * /api/products/search:
+ *   get:
+ *     summary: Search products by name, description, or tags
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of records to skip for pagination
+ *       - in: query
+ *         name: take
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records to return
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 searchQuery:
+ *                   type: string
+ *                   example: laptop
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 totalCount:
+ *                   type: integer
+ *                   example: 12
+ *                 skip:
+ *                   type: integer
+ *                   example: 0
+ *                 take:
+ *                   type: integer
+ *                   example: 10
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *       400:
+ *         description: Search query is required
+ *       401:
+ *         description: Unauthorized
+ */
+productRoutes.get('/search', [authMiddleware], errorHandler(searchProduct))
 
 /**
  * @swagger
@@ -52,7 +116,42 @@ const productRoutes:Router = Router()
  *       401:
  *         description: Unauthorized - Admin access required
  */
-productRoutes.post('/',[authMiddleware,adminMiddleware],errorHandler(createProduct))
+productRoutes.post('/', [authMiddleware, adminMiddleware], errorHandler(createProduct))
+
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     summary: List all products with pagination (Admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: skip
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of records to skip
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 count:
+ *                   type: integer
+ *                   example: 25
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *       401:
+ *         description: Unauthorized - Admin access required
+ */
+productRoutes.get('/', [authMiddleware, adminMiddleware], errorHandler(listProduct))
 
 /**
  * @swagger
@@ -98,7 +197,7 @@ productRoutes.post('/',[authMiddleware,adminMiddleware],errorHandler(createProdu
  *       401:
  *         description: Unauthorized - Admin access required
  */
-productRoutes.put('/:id',[authMiddleware,adminMiddleware],errorHandler(updateProduct))
+productRoutes.put('/:id', [authMiddleware, adminMiddleware], errorHandler(updateProduct))
 
 /**
  * @swagger
@@ -127,42 +226,7 @@ productRoutes.put('/:id',[authMiddleware,adminMiddleware],errorHandler(updatePro
  *       401:
  *         description: Unauthorized - Admin access required
  */
-productRoutes.delete('/:id',[authMiddleware,adminMiddleware],errorHandler(deleteProduct))
-
-/**
- * @swagger
- * /api/products:
- *   get:
- *     summary: List all products with pagination (Admin only)
- *     tags: [Products]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: skip
- *         schema:
- *           type: integer
- *           default: 0
- *         description: Number of records to skip
- *     responses:
- *       200:
- *         description: Products retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 count:
- *                   type: integer
- *                   example: 25
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Product'
- *       401:
- *         description: Unauthorized - Admin access required
- */
-productRoutes.get('/',[authMiddleware,adminMiddleware],errorHandler(listProduct))
+productRoutes.delete('/:id', [authMiddleware, adminMiddleware], errorHandler(deleteProduct))
 
 /**
  * @swagger
@@ -191,6 +255,6 @@ productRoutes.get('/',[authMiddleware,adminMiddleware],errorHandler(listProduct)
  *       401:
  *         description: Unauthorized - Admin access required
  */
-productRoutes.get('/:id',[authMiddleware,adminMiddleware],errorHandler(getProductById))
+productRoutes.get('/:id', [authMiddleware, adminMiddleware], errorHandler(getProductById))
 
 export default productRoutes

@@ -17,7 +17,7 @@ export const addAddress = async (
 
         const { lineOne, lineTwo, city, country, pincode } = req.body;
 
-        console.log('📍 Creating address with data:', { lineOne, lineTwo, city, country, pincode, userId: req.user.id })
+        console.log(' Creating address with data:', { lineOne, lineTwo, city, country, pincode, userId: req.user.id })
 
         // Create the address
         const address = await prismaClient.address.create({
@@ -31,7 +31,7 @@ export const addAddress = async (
             }
         })
 
-        console.log('✅ Address created successfully:', address)
+        console.log(' Address created successfully:', address)
 
         // Fetch user to check if default addresses are set
         const user = await prismaClient.user.findUnique({ where: { id: req.user.id } });
@@ -49,7 +49,7 @@ export const addAddress = async (
                     where: { id: req.user.id },
                     data: updateData
                 })
-                console.log('✅ User default addresses updated automatically')
+                console.log(' User default addresses updated automatically')
             }
         }
 
@@ -58,7 +58,7 @@ export const addAddress = async (
             address: formatAddressWithComputedField(address)
         })
     } catch (error) {
-        console.error('❌ Error creating address:', error)
+        console.error(' Error creating address:', error)
         next(error)
     }
 }
@@ -76,7 +76,7 @@ export const deleteAddress = async (
 
         const addressId = +req.params.id;
 
-        console.log('🗑️  Attempting to delete address:', addressId)
+        console.log('  Attempting to delete address:', addressId)
 
         // Find the address first to check ownership
         const address = await prismaClient.address.findFirst({
@@ -97,14 +97,14 @@ export const deleteAddress = async (
             }
         })
 
-        console.log('✅ Address deleted successfully:', addressId)
+        console.log(' Address deleted successfully:', addressId)
 
         res.json({
             success: true,
             message: 'Address deleted successfully'
         })
     } catch (error) {
-        console.error('❌ Error deleting address:', error)
+        console.error(' Error deleting address:', error)
         next(error)
     }
 }
@@ -119,7 +119,7 @@ export const listAddress = async (
             throw new BadRequestsException('User not authenticated', ErrorCodes.UNAUTHORIZED_EXCEPTION)
         }
 
-        console.log('📋 Fetching addresses for user:', req.user.id)
+        console.log(' Fetching addresses for user:', req.user.id)
 
         // Get all addresses for the authenticated user
         const addresses = await prismaClient.address.findMany({
@@ -131,7 +131,7 @@ export const listAddress = async (
             }
         })
 
-        console.log(`✅ Found ${addresses.length} addresses`)
+        console.log(` Found ${addresses.length} addresses`)
 
         res.json({
             success: true,
@@ -139,7 +139,7 @@ export const listAddress = async (
             addresses: addresses.map(formatAddressWithComputedField)
         })
     } catch (error) {
-        console.error('❌ Error listing addresses:', error)
+        console.error(' Error listing addresses:', error)
         next(error)
     }
 }
@@ -196,12 +196,52 @@ export const updateUser = async (
             data: updateData
         })
 
-        console.log('✅ User updated successfully:', updatedUser.id)
+        console.log(' User updated successfully:', updatedUser.id)
 
         const { password, ...userWithoutPassword } = updatedUser
         res.json({ success: true, user: userWithoutPassword })
     } catch (error) {
-        console.error('❌ Error updating user:', error)
+        console.error(' Error updating user:', error)
         next(error)
+    }
+}
+
+export const listUsers = async(req:Request, res:Response)=>{
+    const users = await prismaClient.user.findMany({
+        skip: Number(req.query.skip) || 0,
+        take: 5
+    })
+    res.json(users)
+}
+export const getUserById = async(req:Request, res:Response)=>{
+    try{
+        const user = await prismaClient.user.findFirstOrThrow({
+            where: {
+                id:  Number(req.params.id)
+            },
+            include: {
+                addresses: true
+            }
+        })
+        res.json(user)
+    }catch (err){
+        throw new NotFoundException('User not found.',ErrorCodes.USER_NOT_FOUND)
+    }
+}
+export const changeUserRole = async(req:Request, res:Response)=>{
+    try{
+        const user = await prismaClient.user.update({
+            where: {
+                id:  Number(req.params.id)
+            },
+            data : {
+                role: req.body.role
+            }
+        })
+
+        res.json(user)
+
+    }catch (err){
+        throw new NotFoundException('User not found.',ErrorCodes.USER_NOT_FOUND)
     }
 }
